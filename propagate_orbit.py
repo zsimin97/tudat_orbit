@@ -19,8 +19,9 @@ sp3_files = [
     "poddata/GFZOP_RSO_L65_G_20240219_220000_20240220_120000_v03.sp3",
 ]
 start = datetime(2024, 2, 19, 00, 00, 0, tzinfo=timezone.utc)
-end   = datetime(2024, 2, 20, 1,  0, 0, tzinfo=timezone.utc)
+end   = datetime(2024, 2, 20, 00,  0, 0, tzinfo=timezone.utc)
 
+# ONLY need INITIAL state
 t_itrs, pos_itrs, vel_itrs = read_sp3_pv(
     sp3_files, start, end, sat_id="L65")
 t_gcrs, pos_gcrs, vel_gcrs = build_pod_from_sp3(
@@ -34,12 +35,8 @@ print("GCRS:",t_gcrs.shape, pos_gcrs.shape, vel_gcrs.shape)
 print("first_gcrs:", t_gcrs[0], pos_gcrs[0], vel_gcrs[0])
 print("**************************************")
 
-start_epoch = time_representation.date_time_components_to_epoch(
-    start.year, start.month, start.day,
-    start.hour, start.minute,
-    start.second + start.microsecond * 1e-6
-)
-end_epoch = float(t_gcrs[-1]) + 1.0
+start_epoch = float(t_gcrs[0])
+end_epoch = float(t_gcrs[-1]) 
 initial_state = np.hstack((pos_gcrs[0], vel_gcrs[0]))
 print("Start epoch (J2000 s):", start_epoch)
 print("Initial state (m, m/s):", initial_state)
@@ -53,16 +50,36 @@ bodies = make_bodies(
     satellite_name="grace_fo",
     cd_guess=3.0,
 )
+
+grav_rank= 120
 propagator_settings = make_propagator_settings(
-    bodies, initial_state, start_epoch, end_epoch, satellite_name="grace_fo"
+    bodies, initial_state, start_epoch, end_epoch, grav_rank, satellite_name="grace_fo"
 )
 state_history = run_forward_simulation(bodies, propagator_settings)
 
+#validate============================================
+prop_init = list(state_history.keys())[0]
+prop_init_state  = state_history[prop_init]
+print("Simulated Propagator initial")
+print("Final epoch:", prop_init)
+print("Final state (m, m/s):", state_history[prop_init])
+print("||r|| (km):", np.linalg.norm(prop_init_state[:3]) / 1e3)
+print("||v|| (km/s):", np.linalg.norm(prop_init_state[3:6]) / 1e3)
+print("**************************************")
+
 final_epoch  = list(state_history.keys())[-1]
 final_state  = state_history[final_epoch]
+print("Simulated Propagator")
 print("Final epoch:", final_epoch)
+print("Final state (m, m/s):", final_state)
 print("||r|| (km):", np.linalg.norm(final_state[:3]) / 1e3)
 print("||v|| (km/s):", np.linalg.norm(final_state[3:6]) / 1e3)
+print("**************************************")
+print("Observation POD")
+print("Final epoch:", end_epoch)
+print("Final state (m, m/s):", np.hstack((pos_gcrs[-1], vel_gcrs[-1])))
+print("||r|| (km):", np.linalg.norm(pos_gcrs[-1]) / 1e3)
+print("||v|| (km/s):", np.linalg.norm(vel_gcrs[-1]) / 1e3)
 
 #np.savez("forward_state_history.npz",
 #         t=np.array(list(state_history.keys())),

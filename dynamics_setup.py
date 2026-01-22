@@ -23,17 +23,24 @@ def make_bodies(
         global_frame_orientation
     )
 
+    body_settings.add_empty_settings(satellite_name)
     #msis atmosphere
     body_settings.get("Earth").atmosphere_settings = environment_setup.atmosphere.nrlmsise00(
         space_weather_file=space_weather_file,
         use_storm_conditions=use_storm_conditions,
         use_anomalous_oxygen=use_anomalous_oxygen,
     )
-   
-    #satellite
-    body_settings.add_empty_settings(satellite_name)
-    body_settings.get(satellite_name).constant_mass = mass
     
+    #solar radiation pressure
+    cr_guess = 1.3
+    occulting_bodies = ["Earth"] 
+    srp_coefficient_settings = environment_setup.radiation_pressure.cannonball(
+        "Sun", reference_area, cr_guess, occulting_bodies)
+    body_settings.get(satellite_name).radiation_pressure_settings = {
+        "Sun": srp_coefficient_settings}
+
+    #satellite
+    body_settings.get(satellite_name).constant_mass = mass
     aero_coefficient_settings = environment_setup.aerodynamic_coefficients.constant(
           reference_area,
           [cd_guess, 0.0, 0.0]
@@ -61,7 +68,8 @@ def make_propagator_settings(
         propagation_setup.acceleration.aerodynamic(),         
         ],
     "Sun": [
-        propagation_setup.acceleration.point_mass_gravity()
+        propagation_setup.acceleration.point_mass_gravity(),
+        propagation_setup.acceleration.cannonball_radiation_pressure()
         ],
     "Moon": [
         propagation_setup.acceleration.point_mass_gravity()
@@ -78,7 +86,7 @@ def make_propagator_settings(
     )
     
     #propagator
-    termination_settings = propagation_setup.propagator.time_termination(end_epoch)
+    termination_settings = propagation_setup.propagator.time_termination(end_epoch, terminate_exactly_on_final_condition = True)
     integrator_settings = propagation_setup.integrator.runge_kutta_fixed_step_size(
           initial_time_step=60.0, coefficient_set=propagation_setup.integrator.CoefficientSets.rkdp_87)
     propagator_settings = propagation_setup.propagator.translational(

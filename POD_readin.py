@@ -4,12 +4,7 @@ from pathlib import Path
 from typing import Iterable, List, Tuple, Dict, Optional
 
 import numpy as np
-import astropy.units as u
 from astropy.time import Time
-from astropy.coordinates import (
-    CartesianRepresentation, CartesianDifferential,
-    ITRS, GCRS
-)
 from tudatpy.interface import spice
 
 def read_sp3_pv(
@@ -73,6 +68,10 @@ def read_sp3_pv(
     times_utc = epochs
     r_itrs_m = [buf[t]["r_m"] for t in epochs]
     v_itrs_mps= [buf[t]["v_mps"] for t in epochs]
+
+    #for t, r, v in zip(times_utc[:5], r_itrs_m[:5], v_itrs_mps[:5]):
+    #    print(f"{t} | r = {r} | v = {v}")
+
     return times_utc, r_itrs_m, v_itrs_mps
                     
 
@@ -84,38 +83,30 @@ def build_pod_from_sp3(
 ):
     times_utc, r_itrs_m, v_itrs_mps = read_sp3_pv(sp3_paths, start_utc, end_utc, sat_id=sat_id)
 
-    N = len(times_utc)
-    t_gcrs = np.zeros(N)
-    pos_gcrs = np.zeros((N,3))
-    vel_gcrs = np.zeros((N,3))
-
     spice.load_standard_kernels()
+    #spice.load_kernel("poddata/earth_2025_250826_2125_predict.bpc")
+    spice.load_kernel("poddata/earth_1962_250826_2125_combined.bpc")
+
+    N = len(times_utc)
+    t_et = np.zeros(N, dtype=np.float64)
+    pos_j2000 = np.zeros((N, 3), dtype=np.float64)
+    vel_j2000 = np.zeros((N, 3), dtype=np.float64)
 
     for k in range(N):
-        t_ast = Time(times_utc[k], scale="utc")
-        pos_itrs = CartesianRepresentation(
-            r_itrs_m[k][0] * u.m,
-            r_itrs_m[k][1] * u.m,
-            r_itrs_m[k][2] * u.m
-        )
-        vel_itrs = CartesianDifferential(
-            v_itrs_mps[k][0] * u.m/u.s,
-            v_itrs_mps[k][1] * u.m/u.s,
-            v_itrs_mps[k][2] * u.m/u.s
-        )
-        state_itrs = pos_itrs.with_differentials(vel_itrs) #state_itrs = (pos, vel)
-        coord_itrs = ITRS(state_itrs,obstime=t_ast)
+        # UTC -> SPICE ET (seconds past J2000, ~TDB)
+        t_str = Time(times_utc[k], scale="utc").utc.strftime("%Y-%m-%d %H:%M:%S.%f")
+        et = spice.convert_date_string_to_ephemeris_time(t_str)
+        t_et[k] = et
+        #print(f"k={k:4d} | UTC={times_utc[k]} | t_str='{t_str}' | ET={et:.6f}")
 
-        #to GCRS
-        coord_gcrs = coord_itrs.transform_to(GCRS(obstime=t_ast))
-        r_gcrs = coord_gcrs.cartesian.xyz.to(u.m).value
-        v_gcrs = coord_gcrs.velocity.d_xyz.to(u.m/u.s).value
+        R = spice.compute_rotation_matrix_between_frames("ITRF93", "J2000", et)
+        Rdot = spice.compute_rotation_matrix_derivative_between_frames("ITRF93", "J2000", et)
 
-        pos_gcrs[k,:] = r_gcrs
-        vel_gcrs[k,:] = v_gcrs
-        t_str = t_ast.utc.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        t_gcrs[k] = spice.convert_date_string_to_ephemeris_time(t_str)
+        rF = r_itrs_m[k]
+        vF = v_itrs_mps[k]
 
-    return t_gcrs, pos_gcrs, vel_gcrs
-
-
+        pos_j2000[k, :] = R @ rF
+        vel_j2000[k, :] = R @ vF + Rdot @ rF
+    #for t, r, v in zip(t_et[:5], pos_j2000[:5], vel_j2000[:5]):
+    #    print(f"ET={t:.3f} | r={r} | v={v}")
+    return t_et, pos_j2000, vel_j2000
