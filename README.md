@@ -37,6 +37,9 @@
       - Output propagated state history for diagnostics
 
 - `estimate_cd.py`
-   - estimation_output: initial states (6), Cd (1)
+   - estimate_cd_and_state
+      - input: sp3_files, start_time, end_time, cd_guess, sat_id
+      - output: initial_vector, final_vector (vector: initial states (6), Cd (1))
+
 - `CD_estimate.py` No longer in use, split into dynamics_setup.py and estimate_cd.py.
    

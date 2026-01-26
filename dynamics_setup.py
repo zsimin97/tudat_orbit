@@ -3,7 +3,7 @@ from tudatpy.interface import spice
 from tudatpy.dynamics import environment_setup, propagation_setup, simulator
 from tudatpy.astro import time_representation
 
-spice.load_standard_kernels()
+# spice.load_standard_kernels()
 
 def make_bodies(
     space_weather_file: str,
