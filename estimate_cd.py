@@ -45,7 +45,7 @@ def estimate_cd_and_state(sp3_files, start_time, end_time, cd_guess, sat_id="L65
 
     # include acceleration setting
     # gravity coefficient
-    grav_rank=20
+    grav_rank=120
     propagator_settings = make_propagator_settings(
         bodies, initial_state, start_epoch, end_epoch, grav_rank=grav_rank,satellite_name=satellite_name
     )
@@ -107,7 +107,10 @@ def estimate_cd_and_state(sp3_files, start_time, end_time, cd_guess, sat_id="L65
     print("Estimated parameters:", estimation_output.final_parameters)
     print("Final parameter vector:\n", parameter_to_estimate.parameter_vector)
     
-    final_residuals = estimation_output.residual_history[-1] 
+    final_residuals = estimation_output.final_residuals
+    #print("final residual:",final_residuals)
+    #print("Shape of final_residuals:", final_residuals.shape)
+
     final_rms_residual = np.sqrt(np.mean(np.square(final_residuals)))
     final_vector = estimation_output.final_parameters
 

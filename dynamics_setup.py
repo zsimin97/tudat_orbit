@@ -64,7 +64,7 @@ def make_propagator_settings(
     #acceleration  
     acc_settings_spacecraft = {
     "Earth": [
-        propagation_setup.acceleration.spherical_harmonic_gravity(grav_rank,grav_rank),  
+        propagation_setup.acceleration.spherical_harmonic_gravity(grav_rank,grav_rank), 
         propagation_setup.acceleration.aerodynamic(),         
         ],
     "Sun": [
@@ -88,7 +88,7 @@ def make_propagator_settings(
     #propagator
     termination_settings = propagation_setup.propagator.time_termination(end_epoch, terminate_exactly_on_final_condition = True)
     integrator_settings = propagation_setup.integrator.runge_kutta_fixed_step_size(
-          initial_time_step=60.0, coefficient_set=propagation_setup.integrator.CoefficientSets.rkdp_87)
+          initial_time_step=10.0, coefficient_set=propagation_setup.integrator.CoefficientSets.rkdp_87)
     propagator_settings = propagation_setup.propagator.translational(
         central_bodies,
         acceleration_models,

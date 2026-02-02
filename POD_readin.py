@@ -1,9 +1,11 @@
 from __future__ import annotations
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Iterable, List, Tuple, Dict, Optional
 
 import numpy as np
+import os
+import glob
 from astropy.time import Time
 from tudatpy.interface import spice
 
@@ -83,7 +85,7 @@ def build_pod_from_sp3(
 ):
     times_utc, r_itrs_m, v_itrs_mps = read_sp3_pv(sp3_paths, start_utc, end_utc, sat_id=sat_id)
 
-    spice.load_standard_kernels()
+    #spice.load_standard_kernels()
     #spice.load_kernel("poddata/earth_2025_250826_2125_predict.bpc")
     spice.load_kernel("poddata/earth_1962_250826_2125_combined.bpc")
 
@@ -110,3 +112,17 @@ def build_pod_from_sp3(
     #for t, r, v in zip(t_et[:5], pos_j2000[:5], vel_j2000[:5]):
     #    print(f"ET={t:.3f} | r={r} | v={v}")
     return t_et, pos_j2000, vel_j2000
+
+
+def find_sp3_files_for_date(y, m, d, directory):
+    target_dt = datetime(y, m, d)
+    search_days = [target_dt - timedelta(days=1), target_dt, target_dt + timedelta(days=1)]
+    
+    found_files = []
+    for day in search_days:
+        date_str = day.strftime("%Y%m%d")
+
+        pattern = os.path.join(directory, f"GFZOP_RSO_L65_G_{date_str}_*.sp3")
+        found_files.extend(glob.glob(pattern))
+    
+    return sorted(list(set(found_files)))
