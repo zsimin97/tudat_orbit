@@ -8,6 +8,9 @@
 - time line: yyyy mm dd hh mm 0.000
 - POD data: position(km) and velocity(dm/s), not orbit elements.
 
+- earth_1962_250826_2125_combined.bpc for the ITRF93 spice
+- earth_2025_250826_2125_predict.bpc for the latest
+
 
 ## scripts
 
@@ -39,7 +42,17 @@
 - `estimate_cd.py`
    - estimate_cd_and_state
       - input: sp3_files, start_time, end_time, cd_guess, sat_id
-      - output: initial_vector, final_vector (vector: initial states (6), Cd (1))
+      - output: initial_vector, 
+                final_vector (vector: initial states (6), Cd (1))
+                final_rms_residual
+                covariance_output
+
+- `calibration_cd.py`
+  - check the Cd result from `estimate_cd.py`
+      - Locked Cd
+      - Eigenvalues and eigenvectors of covariance matrix
+      - Confidence ellipsoid and projections
+     
 
 - `CD_estimate.py` No longer in use, split into dynamics_setup.py and estimate_cd.py.
    

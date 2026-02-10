@@ -45,7 +45,7 @@ def estimate_cd_and_state(sp3_files, start_time, end_time, cd_guess, sat_id="L65
 
     # include acceleration setting
     # gravity coefficient
-    grav_rank=120
+    grav_rank=20
     propagator_settings = make_propagator_settings(
         bodies, initial_state, start_epoch, end_epoch, grav_rank=grav_rank,satellite_name=satellite_name
     )
@@ -97,16 +97,23 @@ def estimate_cd_and_state(sp3_files, start_time, end_time, cd_guess, sat_id="L65
     observation_collection.set_constant_weight(w)
 
     estimation_input = estimation_analysis.EstimationInput(observation_collection, invP0)
+    covariance_input = estimation_analysis.CovarianceAnalysisInput(observation_collection)
 
     estimation_input.define_estimation_settings(
         reintegrate_variational_equations=True,
         reintegrate_equations_on_first_iteration=True
     )
+    covariance_input.define_covariance_settings(
+    reintegrate_variational_equations=False)
 
     estimation_output = estimator.perform_estimation(estimation_input)
     print("Estimated parameters:", estimation_output.final_parameters)
     print("Final parameter vector:\n", parameter_to_estimate.parameter_vector)
-    
+
+    covariance_output = estimator.compute_covariance(covariance_input)
+    #formal_errors = covariance_output.formal_errors
+    #print(f'Formal Errors:\n{formal_errors}')
+
     final_residuals = estimation_output.final_residuals
     #print("final residual:",final_residuals)
     #print("Shape of final_residuals:", final_residuals.shape)
@@ -114,4 +121,4 @@ def estimate_cd_and_state(sp3_files, start_time, end_time, cd_guess, sat_id="L65
     final_rms_residual = np.sqrt(np.mean(np.square(final_residuals)))
     final_vector = estimation_output.final_parameters
 
-    return initial_vector, final_vector, final_rms_residual
+    return initial_vector, final_vector, final_rms_residual, covariance_output
