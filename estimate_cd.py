@@ -46,8 +46,9 @@ def estimate_cd_and_state(sp3_files, start_time, end_time, cd_guess, sat_id="L65
     # include acceleration setting
     # gravity coefficient
     grav_rank=20
+    step_size=10.0
     propagator_settings = make_propagator_settings(
-        bodies, initial_state, start_epoch, end_epoch, grav_rank=grav_rank,satellite_name=satellite_name
+        bodies, initial_state, start_epoch, end_epoch, grav_rank=grav_rank, step_size = step_size,satellite_name=satellite_name
     )
 
     # observation, the true pod====================================
