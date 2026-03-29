@@ -58,6 +58,7 @@ def make_propagator_settings(
     start_epoch: float,
     end_epoch: float,
     grav_rank: int = 20,
+    step_size: float = 10.0,
     satellite_name: str = "grace_fo",
 ):
       
@@ -88,7 +89,7 @@ def make_propagator_settings(
     #propagator
     termination_settings = propagation_setup.propagator.time_termination(end_epoch, terminate_exactly_on_final_condition = True)
     integrator_settings = propagation_setup.integrator.runge_kutta_fixed_step_size(
-          initial_time_step=10.0, coefficient_set=propagation_setup.integrator.CoefficientSets.rkdp_87)
+          initial_time_step=step_size, coefficient_set=propagation_setup.integrator.CoefficientSets.rkdp_87)
     propagator_settings = propagation_setup.propagator.translational(
         central_bodies,
         acceleration_models,
